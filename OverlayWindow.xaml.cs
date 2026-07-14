@@ -166,8 +166,12 @@ namespace Screenshoter
             Canvas.SetTop(Toolbar, y);
         }
 
+        private bool _chromeShown;
+
         private void ShowChrome()
         {
+            if (_chromeShown) { Toolbar.Opacity = 0.85; return; }
+            _chromeShown = true;
             Toolbar.BeginAnimation(OpacityProperty,
                 new DoubleAnimation(0.85, TimeSpan.FromSeconds(0.12)));
         }
@@ -180,6 +184,9 @@ namespace Screenshoter
 
         private void HideChrome()
         {
+            _chromeShown = false;
+            Toolbar.BeginAnimation(OpacityProperty, null);
+            Toolbar.Opacity = 0;
             SelectionBorder.Visibility = Visibility.Collapsed;
             SelectionGeo.Rect = Rect.Empty;
             HideThumbsAndToolbar();
