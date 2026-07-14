@@ -12,12 +12,13 @@
     <Version>1.2.0</Version>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
     <FileVersion>1.2.0.0</FileVersion>
+    <AssemblyName>SnapFlow</AssemblyName>
     <Authors>Onzi</Authors>
     <Company>Onzi</Company>
-    <Product>Screenshoter</Product>
+    <Product>SnapFlow</Product>
     <Copyright>Copyright © Onzi 2026</Copyright>
-    <AssemblyTitle>Screenshoter</AssemblyTitle>
-    <Description>Минималистичный скриншотер: захват области, копирование, сохранение, глобальные горячие клавиши.</Description>
+    <AssemblyTitle>SnapFlow</AssemblyTitle>
+    <Description>SnapFlow — минималистичный скриншотер: захват области, копирование, сохранение, глобальные горячие клавиши.</Description>
   </PropertyGroup>
 
   <ItemGroup>

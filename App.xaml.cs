@@ -47,7 +47,7 @@ public partial class App : WpfApp
         {
             Icon = LoadAppIcon(),
             Visible = true,
-            Text = "Screenshoter",
+            Text = "SnapFlow",
             ContextMenuStrip = menu
         };
         _tray.DoubleClick += (_, __) => StartCapture();
@@ -78,7 +78,7 @@ public partial class App : WpfApp
         }
         catch (Exception ex)
         {
-            _tray?.ShowBalloonTip(4000, "Screenshoter",
+            _tray?.ShowBalloonTip(4000, "SnapFlow",
                 $"Горячая клавиша {_cfg.ToDisplayString()} недоступна. Используйте меню в трее.\n{ex.Message}",
                 ToolTipIcon.Warning);
         }

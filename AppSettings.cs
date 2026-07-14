@@ -6,7 +6,7 @@ using System.Windows.Input;
 
 namespace Screenshoter
 {
-    // Настройки приложения с сохранением в %AppData%\Screenshoter\settings.json
+    // Настройки приложения с сохранением в %AppData%\SnapFlow\settings.json
     public sealed class AppSettings
     {
         public ModifierKeys Modifiers { get; set; } = ModifierKeys.Shift | ModifierKeys.Alt;
@@ -19,7 +19,7 @@ namespace Screenshoter
         };
 
         private static string Dir =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Screenshoter");
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SnapFlow");
 
         private static string FilePath => Path.Combine(Dir, "settings.json");
 
