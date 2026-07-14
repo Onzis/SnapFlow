@@ -35,7 +35,7 @@ public partial class App : WpfApp
 
         _tray = new NotifyIcon
         {
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = LoadAppIcon(),
             Visible = true,
             Text = "Screenshoter",
             ContextMenuStrip = menu
@@ -44,6 +44,18 @@ public partial class App : WpfApp
     }
 
     private string CaptureMenuText() => $"Скриншот области ({_cfg.ToDisplayString()})";
+
+    private static System.Drawing.Icon LoadAppIcon()
+    {
+        try
+        {
+            var uri = new Uri("pack://application:,,,/app.ico");
+            var info = GetResourceStream(uri);
+            if (info != null) return new System.Drawing.Icon(info.Stream, new System.Drawing.Size(32, 32));
+        }
+        catch { /* fallback */ }
+        return System.Drawing.SystemIcons.Application;
+    }
 
     private void RegisterHotkey()
     {
