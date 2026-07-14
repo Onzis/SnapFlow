@@ -26,12 +26,22 @@ public partial class App : WpfApp
 
     private void InitTray()
     {
-        var menu = new ContextMenuStrip();
+        var menu = new ContextMenuStrip
+        {
+            Renderer = new DarkMenuRenderer(),
+            BackColor = DarkColorTable.Background,
+            ForeColor = System.Drawing.Color.White,
+            ShowImageMargin = false,
+            Font = new System.Drawing.Font("Segoe UI", 9.5f),
+            Padding = new Padding(4)
+        };
         _captureItem = new ToolStripMenuItem(CaptureMenuText(), null, (_, __) => StartCapture());
         menu.Items.Add(_captureItem);
         menu.Items.Add("Настройки…", null, (_, __) => OpenSettings());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Выход", null, (_, __) => ExitApp());
+        foreach (ToolStripItem item in menu.Items)
+            if (item is ToolStripMenuItem mi) { mi.Padding = new Padding(8, 2, 8, 2); mi.AutoSize = true; }
 
         _tray = new NotifyIcon
         {
