@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -48,20 +49,20 @@ namespace Screenshoter
             MouseLeftButtonUp += OnMouseUp;
             KeyDown += OnKeyDown;
 
-            BtnClose.Click += (_, __) => CloseAsync();
-            BtnCopy.Click += (_, __) => CopyAsync();
-            BtnSave.Click += (_, __) => SaveAsync();
+            BtnClose.Click += (_, __) => _ = CloseAsync();
+            BtnCopy.Click += (_, __) => _ = CopyAsync();
+            BtnSave.Click += (_, __) => _ = SaveAsync();
         }
 
         // ---------- Горячие клавиши ----------
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape) { CloseAsync(); return; }
+            if (e.Key == Key.Escape) { _ = CloseAsync(); return; }
             if (!_hasSelection) return;
 
             bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-            if (ctrl && e.Key == Key.C) { CopyAsync(); e.Handled = true; }
-            else if (ctrl && e.Key == Key.S) { SaveAsync(); e.Handled = true; }
+            if (ctrl && e.Key == Key.C) { _ = CopyAsync(); e.Handled = true; }
+            else if (ctrl && e.Key == Key.S) { _ = SaveAsync(); e.Handled = true; }
         }
 
         // ---------- Рисование / перемещение области ----------
@@ -241,32 +242,56 @@ namespace Screenshoter
             => v < min ? min : (v > max ? max : v);
 
         // ---------- Асинхронные действия ----------
-        private async void CopyAsync()
+        private async Task CopyAsync()
         {
-            var rect = _selection;
-            HideChrome();
-            await PlayCaptureFlashAsync(rect);
-            await FadeOutAsync();
-            var crop = ScreenshotHelper.Crop(_fullShot, rect, ActualWidth, ActualHeight);
-            await ScreenshotHelper.CopyToClipboardAsync(crop);
-            Close();
+            try
+            {
+                var rect = _selection;
+                HideChrome();
+                await PlayCaptureFlashAsync(rect);
+                await FadeOutAsync();
+                var crop = ScreenshotHelper.Crop(_fullShot, rect, ActualWidth, ActualHeight);
+                await ScreenshotHelper.CopyToClipboardAsync(crop);
+                Close();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "OverlayWindow.CopyAsync");
+                Close();
+            }
         }
 
-        private async void SaveAsync()
+        private async Task SaveAsync()
         {
-            var rect = _selection;
-            var crop = ScreenshotHelper.Crop(_fullShot, rect, ActualWidth, ActualHeight);
-            HideChrome();
-            await PlayCaptureFlashAsync(rect);
-            await FadeOutAsync();
-            await ScreenshotHelper.SaveAsync(crop);
-            Close();
+            try
+            {
+                var rect = _selection;
+                var crop = ScreenshotHelper.Crop(_fullShot, rect, ActualWidth, ActualHeight);
+                HideChrome();
+                await PlayCaptureFlashAsync(rect);
+                await FadeOutAsync();
+                await ScreenshotHelper.SaveAsync(crop);
+                Close();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "OverlayWindow.SaveAsync");
+                Close();
+            }
         }
 
-        private async void CloseAsync()
+        private async Task CloseAsync()
         {
-            await FadeOutAsync();
-            Close();
+            try
+            {
+                await FadeOutAsync();
+                Close();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "OverlayWindow.CloseAsync");
+                Close();
+            }
         }
 
         // Вспышка по области выделения — эффект «снимка».

@@ -1,0 +1,57 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build -c Release --no-restore
+
+    - name: Test
+      run: dotnet test -c Release --no-restore --no-build
+
+    - name: Publish (tagged release only)
+      if: startsWith(github.ref, 'refs/tags/v')
+      shell: pwsh
+      run: |
+        dotnet publish -c Release -r win-x64 --self-contained true `
+          /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true `
+          /p:EnableCompressionInSingleFile=true
+        Compress-Archive -Path bin\Release\net8.0-windows\win-x64\publish\* `
+          -DestinationPath SnapFlow-${{ github.ref_name }}.zip
+
+    - name: Upload PDB symbols
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: actions/upload-artifact@v4
+      with:
+        name: symbols
+        path: bin\Release\net8.0-windows\win-x64\publish\*.pdb
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: pwsh
+      run: |
+        gh release create ${{ github.ref_name }} `
+          SnapFlow-${{ github.ref_name }}.zip `
+          --title "${{ github.ref_name }}" `
+          --generate-notes

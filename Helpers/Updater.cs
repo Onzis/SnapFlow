@@ -5,11 +5,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Screenshoter
 {
-    // Проверка новой версии и автообновление с GitHub Releases.
     public static class Updater
     {
         private const string Owner = "Onzis";
@@ -25,6 +25,7 @@ namespace Screenshoter
             public string Notes { get; init; } = "";
             public string DownloadUrl { get; init; } = "";
             public string HtmlUrl { get; init; } = "";
+            public string? ExpectedSha256 { get; init; }
         }
 
         public static Version CurrentVersion =>
@@ -38,7 +39,6 @@ namespace Screenshoter
             return c;
         }
 
-        // Запрос последнего релиза. null — если проверить не удалось.
         public static async Task<ReleaseInfo?> GetLatestAsync()
         {
             try
@@ -67,6 +67,13 @@ namespace Screenshoter
                     }
                 }
 
+                string? expectedSha256 = null;
+                var shaMatch = Regex.Match(notes,
+                    @"(?:SHA-?256|Checksum)[:\s]+([0-9a-fA-F]{64})",
+                    RegexOptions.IgnoreCase);
+                if (shaMatch.Success)
+                    expectedSha256 = shaMatch.Groups[1].Value.ToUpperInvariant();
+
                 return new ReleaseInfo
                 {
                     Version = ParseVersion(tag),
@@ -74,18 +81,19 @@ namespace Screenshoter
                     Name = name,
                     Notes = notes,
                     DownloadUrl = url,
-                    HtmlUrl = html
+                    HtmlUrl = html,
+                    ExpectedSha256 = expectedSha256
                 };
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Error(ex, "Updater.GetLatestAsync failed");
                 return null;
             }
         }
 
         public static bool IsNewer(ReleaseInfo release) => release.Version > CurrentVersion;
 
-        // Скачивает новый exe и запускает замену с перезапуском приложения.
         public static async Task<bool> DownloadAndApplyAsync(ReleaseInfo release)
         {
             if (string.IsNullOrEmpty(release.DownloadUrl)) return false;
@@ -106,11 +114,29 @@ namespace Screenshoter
                 await resp.Content.CopyToAsync(fs);
             }
 
+            if (!string.IsNullOrEmpty(release.ExpectedSha256))
+            {
+                var sha256 = System.Security.Cryptography.SHA256.HashData(
+                    await File.ReadAllBytesAsync(newExe));
+                var actualHash = Convert.ToHexString(sha256);
+                if (!string.Equals(actualHash, release.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.Error(
+                        $"SHA-256 mismatch for {newExe}: expected {release.ExpectedSha256}, got {actualHash}");
+                    try { File.Delete(newExe); } catch { }
+                    return false;
+                }
+                Logger.Info($"SHA-256 verified: {actualHash}");
+            }
+            else
+            {
+                Logger.Warn("No SHA-256 provided in release notes, skipping integrity check");
+            }
+
             WriteAndRunSwapScript(currentExe, newExe);
             return true;
         }
 
-        // Батник ждёт закрытия текущего процесса, подменяет exe и перезапускает.
         private static void WriteAndRunSwapScript(string currentExe, string newExe)
         {
             int pid = Process.GetCurrentProcess().Id;

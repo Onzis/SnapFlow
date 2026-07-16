@@ -21,7 +21,9 @@ namespace Screenshoter
         private static string Dir =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SnapFlow");
 
-        private static string FilePath => Path.Combine(Dir, "settings.json");
+        internal static string? TestDir { private get; set; }
+
+        private static string FilePath => Path.Combine(TestDir ?? Dir, "settings.json");
 
         public static AppSettings Load()
         {
@@ -34,7 +36,7 @@ namespace Screenshoter
                     if (s != null && s.Key != Key.None) return s;
                 }
             }
-            catch { /* повреждённый файл -> дефолты */ }
+            catch (Exception ex) { Logger.Error(ex, "AppSettings.Load failed, using defaults"); }
             return new AppSettings();
         }
 
@@ -45,7 +47,7 @@ namespace Screenshoter
                 Directory.CreateDirectory(Dir);
                 File.WriteAllText(FilePath, JsonSerializer.Serialize(this, JsonOpts));
             }
-            catch { /* игнорируем ошибки записи */ }
+            catch (Exception ex) { Logger.Error(ex, "AppSettings.Save failed"); }
         }
 
         // Перевод в модификаторы Win32

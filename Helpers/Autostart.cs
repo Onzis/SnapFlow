@@ -1,14 +1,14 @@
 using System;
 using System.Diagnostics;
-using Microsoft.Win32;
 
 namespace Screenshoter
 {
-    // Автозапуск через HKCU\...\Run (не требует прав администратора).
     public static class Autostart
     {
         private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string ValueName = "SnapFlow";
+
+        internal static IRegistryService? RegistryService { private get; set; }
 
         private static string ExePath =>
             Process.GetCurrentProcess().MainModule?.FileName
@@ -18,27 +18,31 @@ namespace Screenshoter
         {
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey(RunKey, false);
-                var val = key?.GetValue(ValueName) as string;
+                var reg = RegistryService ?? new WindowsRegistryService();
+                var val = reg.GetValue(RunKey, ValueName);
                 return !string.IsNullOrEmpty(val);
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Autostart.IsEnabled failed");
+                return false;
+            }
         }
 
         public static void SetEnabled(bool enabled)
         {
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey(RunKey, true)
-                                ?? Registry.CurrentUser.CreateSubKey(RunKey);
-                if (key == null) return;
-
+                var reg = RegistryService ?? new WindowsRegistryService();
                 if (enabled)
-                    key.SetValue(ValueName, $"\"{ExePath}\"");
+                    reg.SetValue(RunKey, ValueName, $"\"{ExePath}\"");
                 else
-                    key.DeleteValue(ValueName, false);
+                    reg.DeleteValue(RunKey, ValueName, false);
             }
-            catch { /* игнорируем ошибки реестра */ }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Autostart.SetEnabled failed");
+            }
         }
     }
 }
